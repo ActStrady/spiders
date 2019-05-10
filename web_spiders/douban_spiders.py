@@ -7,9 +7,12 @@
 # @GitHub : https://github.com/ActStrady/spiders
 import os
 import re
-
 import requests
+from urllib.request import urlopen
 from lxml import etree
+
+header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                        'Chrome/74.0.3729.131 Safari/537.36'}
 
 
 def page_movies_info(page):
@@ -20,7 +23,7 @@ def page_movies_info(page):
     """
     page_movies_info_list = list()
     # 获取html页面
-    html = requests.get('https://movie.douban.com/top250?start={}'.format(page * 25))
+    html = requests.get('https://movie.douban.com/top250?start={}'.format(page * 25), headers=header)
 
     # 解析
     selector = etree.HTML(html.text)
@@ -56,7 +59,7 @@ def page_movies_info(page):
 def page_movies_pic(page):
     page_movies_pic_list = list()
     # 获取html页面
-    html = requests.get('https://movie.douban.com/top250?start={}'.format(page * 25))
+    html = requests.get('https://movie.douban.com/top250?start={}'.format(page * 25), headers=header)
 
     # 解析
     selector = etree.HTML(html.text)
@@ -83,17 +86,17 @@ def all_movies_info():
     return movies_info_list
 
 
-def all_movies_data(type):
+def all_movies_pic():
     movies_pic_list = list()
     for i in range(10):
         # 获取每页电影
-        page_movies_list = page_movies_info(i)
-        for movie in page_movies_list:
-            movies_pic_list.append(movie)
+        page_movies_pic_list = page_movies_pic(i)
+        for movie_pic in page_movies_pic_list:
+            movies_pic_list.append(movie_pic)
     return movies_pic_list
 
 
-def save_to_file(path, data_list, mode):
+def save_to_file(path, data_list):
     """
     保存到本地
     :param : 数据列表
@@ -104,12 +107,24 @@ def save_to_file(path, data_list, mode):
         os.remove(path)
     # 写入文件
     for movie in data_list:
-        with open(path, mode, encoding='utf-8') as f:
+        with open(path, 'a', encoding='utf-8') as f:
             movie_str = ','.join(movie) + '\n'
             f.write(movie_str)
 
 
+def down_to_file(data_list):
+    for data in data_list:
+        name = data[0]
+        image_url = data[1]
+        image_type = re.findall('.*\\.(.*)', image_url)[0]
+        with urlopen(image_url) as f_image:
+            with open('../douban/pic/{}.{}'.format(name, image_type), 'wb') as f:
+                f.write(f_image.read())
+
+
 if __name__ == '__main__':
-    print(all_movies_info())
-    save_to_file('../douban/info/movies.txt', all_movies_info())
-    print(page_movies_pic(0))
+    # print(all_movies_info())
+    # print(all_movies_pic())
+    # save_to_file('../douban/info/movies_info.txt', all_movies_info())
+    # save_to_file('../douban/info/movies_pic.txt', all_movies_pic())
+    down_to_file(all_movies_pic())
