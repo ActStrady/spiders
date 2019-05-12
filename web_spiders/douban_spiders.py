@@ -66,6 +66,12 @@ def page_movies(page):
 
 
 def recursion_movies(url):
+    """
+    递归爬取所有信息
+    读取下一页的内容使用页面的下一页按钮的路径
+    :param url: 首页的地址
+    :return: 信息列表和图片列表
+    """
     # 获取html页面
     html = requests.get(url, headers=header)
 
@@ -161,13 +167,13 @@ def down_to_file(data_list):
 
 
 if __name__ == '__main__':
-    # # 递归方式
-    # movie_lists = recursion_movies('https://movie.douban.com/top250')
-    # save_to_file('../douban/info/movies_info.txt', movie_lists[0])
-    # save_to_file('../douban/info/movies_pic.txt', movie_lists[1])
-    # down_to_file(movie_lists[1])
-    # 一般方式
-    movie_lists = all_movies()
+    # 递归方式
+    movie_lists = recursion_movies('https://movie.douban.com/top250')
     save_to_file('../douban/info/movies_info.txt', movie_lists[0])
     save_to_file('../douban/info/movies_pic.txt', movie_lists[1])
     down_to_file(movie_lists[1])
+    # # 一般方式
+    # movie_lists = all_movies()
+    # save_to_file('../douban/info/movies_info.txt', movie_lists[0])
+    # save_to_file('../douban/info/movies_pic.txt', movie_lists[1])
+    # down_to_file(movie_lists[1])
