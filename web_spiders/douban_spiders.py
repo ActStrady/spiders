@@ -8,11 +8,14 @@
 import os
 import re
 import requests
+import util
 from urllib.request import urlopen
 from lxml import etree
 
-header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                        'Chrome/74.0.3729.131 Safari/537.36'}
+"""
+
+"""
+header = util.HEADER
 # 电影数据列表
 movie_info_list = list()
 # 电影图片列表
@@ -22,7 +25,7 @@ movie_pic_list = list()
 def page_movies(page):
     """
     获取豆瓣电影Top250一页的电影数据和图片
-    :param page: 页数
+    :param page: 页数 从0开始
     :return: 本页电影数据列表与图片列表
     """
     page_movies_info_list = list()
@@ -160,6 +163,7 @@ def down_to_file(data_list):
     for data in data_list:
         name = data[0]
         image_url = data[1]
+        # 文件的后缀名
         image_type = re.findall('.*\\.(.*)', image_url)[0]
         with urlopen(image_url) as f_image:
             with open('../douban/pic/{}.{}'.format(name, image_type), 'wb') as f:
