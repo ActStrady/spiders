@@ -5,13 +5,15 @@
 # @Author : ActStrady@tom.com
 # @FileName : douban_login.py
 # @GitHub : https://github.com/ActStrady/spiders
-import requests
-import util
+
 """
 实现自动登录
 主要有两种实现：1.利用session，传入data属性来做，如果有验证码则不能使用
              2.利用网站cookie来实现，传入cookies属性
 """
+
+import requests
+import util
 
 # 登录地址
 login_url = 'https://accounts.douban.com/j/mobile/login/basic'

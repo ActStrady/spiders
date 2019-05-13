@@ -5,16 +5,19 @@
 # @Author : ActStrady@tom.com
 # @FileName : douban_spiders.py
 # @GitHub : https://github.com/ActStrady/spiders
+
+"""
+爬取豆瓣电影top250信息
+主要使用两种：1.按页来取，利用url加参数来实现
+           2.递归取，利用页面的下一页实现
+"""
+
 import os
 import re
-import requests
 import util
-from urllib.request import urlopen
+import requests
 from lxml import etree
-
-"""
-
-"""
+from urllib.request import urlopen
 header = util.HEADER
 # 电影数据列表
 movie_info_list = list()
