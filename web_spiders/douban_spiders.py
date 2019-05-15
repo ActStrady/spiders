@@ -16,13 +16,21 @@ import os
 import re
 import util
 import requests
+import pymongo
 from lxml import etree
 from urllib.request import urlopen
+
+from util import mysql_util
+
 header = util.HEADER
 # 电影数据列表
 movie_info_list = list()
 # 电影图片列表
 movie_pic_list = list()
+# 获取mysql连接
+db_conn = mysql_util.get_mysql_connect()
+# 获取mysql游标
+db_cursor = db_conn.cursor()
 
 
 def page_movies(page):
@@ -173,14 +181,58 @@ def down_to_file(data_list):
                 f.write(f_image.read())
 
 
+def save_to_mysql(sql, data_list):
+    for data in data_list:
+        # 插入
+        db_cursor.execute(sql, data)
+    # 提交
+    db_conn.commit()
+    # 关闭资源
+    db_cursor.close()
+    db_conn.close()
+
+
+def save_to_mongo(data_dicts):
+    db_client = pymongo.MongoClient('192.168.46.209')
+    db = db_client['douban']
+    db_collection = db['movies']
+    db_collection.insert_many(data_dicts)
+    db_client.close()
+
+
 if __name__ == '__main__':
     # 递归方式
-    movie_lists = recursion_movies('https://movie.douban.com/top250')
-    save_to_file('../douban/info/movies_info.txt', movie_lists[0])
-    save_to_file('../douban/info/movies_pic.txt', movie_lists[1])
-    down_to_file(movie_lists[1])
+    # movie_lists = recursion_movies('https://movie.douban.com/top250')
+    # save_to_file('../douban/info/movies_info.txt', movie_lists[0])
+    # save_to_file('../douban/info/movies_pic.txt', movie_lists[1])
+    # down_to_file(movie_lists[1])
     # # 一般方式
     # movie_lists = all_movies()
     # save_to_file('../douban/info/movies_info.txt', movie_lists[0])
     # save_to_file('../douban/info/movies_pic.txt', movie_lists[1])
     # down_to_file(movie_lists[1])
+    # 存入mysql
+    # movie_lists = recursion_movies('https://movie.douban.com/top250')
+    # movie_info_list = movie_lists[0]
+    # movie_pic_list_list = movie_lists[1]
+    # info_sql = '''
+    #     insert into douban.info(name, url, director, actor, star, grade, grade_num)
+    #     values (%s, %s, %s, %s, %s, %s, %s)
+    # '''
+    # save_to_mysql(info_sql, movie_info_list)
+    # pic_sql = '''
+    #     insert into douban.pic(name, pic_url)
+    #     values (%s, %s)
+    # '''
+    # save_to_mysql(pic_sql, movie_pic_list)
+    # 存入mongodb
+    movie_lists = recursion_movies('https://movie.douban.com/top250')
+    movie_info_list = movie_lists[0]
+    movie_pic_list_list = movie_lists[1]
+    movie_info_title = ('name', 'url', 'director', 'actor', 'star', 'grade', 'grade_num')
+    movie_info_dicts = list()
+    for movie_info_value in movie_info_list:
+        movie_info_dict = dict(zip(movie_info_title, movie_info_value))
+        movie_info_dicts.append(movie_info_dict)
+    print(movie_info_dicts)
+    save_to_mongo(movie_info_dicts)
