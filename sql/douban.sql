@@ -11,13 +11,6 @@ create table douban.info
     actor     varchar(255) comment '主演',
     star      varchar(255) not null comment '星级',
     grade     varchar(255) not null comment '评分',
-    grade_num varchar(255) not null comment '评分人数'
+    grade_num varchar(255) not null comment '评分人数',
+     pic_url varchar(255) not null comment '电影图片地址'
 ) comment '豆瓣top250电影信息表';
-
-drop table if exists douban.pic;
-create table douban.pic
-(
-    id      int auto_increment primary key comment '主键',
-    name    varchar(255) not null comment '电影名',
-    pic_url varchar(255) not null comment '电影图片地址'
-)

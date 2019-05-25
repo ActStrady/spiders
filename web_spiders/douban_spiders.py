@@ -23,10 +23,8 @@ from urllib.request import urlopen
 from util import mysql_util
 
 header = util.HEADER
-# 电影数据列表
-movie_info_list = list()
-# 电影图片列表
-movie_pic_list = list()
+# 电影列表
+movie_list = list()
 # 获取mysql连接
 db_conn = mysql_util.get_mysql_connect()
 # 获取mysql游标
@@ -39,8 +37,7 @@ def page_movies(page):
     :param page: 页数 从0开始
     :return: 本页电影数据列表与图片列表
     """
-    page_movies_info_list = list()
-    page_movies_pic_list = list()
+    page_movie = list()
     # 获取html页面
     html = requests.get('https://movie.douban.com/top250?start={}'.format(page * 25), headers=header)
 
@@ -72,11 +69,9 @@ def page_movies(page):
         grade_num = re.findall('\\d*', grade_num_str)[0]
         # 图片url
         pic_url = movie_selector.xpath(".//img/@src")[0]
-        movie_info = (name, url, director, actor, star, grade, grade_num)
-        movie_pic = (name, pic_url)
-        page_movies_info_list.append(movie_info)
-        page_movies_pic_list.append(movie_pic)
-    return page_movies_info_list, page_movies_pic_list
+        movie = (name, url, director, actor, star, grade, grade_num, pic_url)
+        page_movie.append(movie)
+    return page_movie
 
 
 def recursion_movies(url):
@@ -119,17 +114,15 @@ def recursion_movies(url):
         pic_url = movie_selector.xpath(".//img/@src")[0]
 
         # 保存信息
-        movie_info = (name, url, director, actor, star, grade, grade_num)
-        movie_pic = (name, pic_url)
-        movie_info_list.append(movie_info)
-        movie_pic_list.append(movie_pic)
+        movie_info = (name, url, director, actor, star, grade, grade_num, pic_url)
+        movie_list.append(movie_info)
 
     # 有下一页就递归获取
     next_selector = selector.xpath("//span[@class='next']/a/@href")
     if next_selector:
         next_url = 'https://movie.douban.com/top250' + next_selector[0]
         recursion_movies(next_url)
-    return movie_info_list, movie_pic_list
+    return movie_list
 
 
 def all_movies():
@@ -138,13 +131,10 @@ def all_movies():
     :return: 全部电影数据列表与图片列表
     """
     for i in range(10):
-        page_movies_info_list = page_movies(i)[0]
-        for movie_info in page_movies_info_list:
-            movie_info_list.append(movie_info)
-        page_movies_pic_list = page_movies(i)[1]
-        for movie_pic in page_movies_pic_list:
-            movie_pic_list.append(movie_pic)
-    return movie_info_list, movie_pic_list
+        page_movie = page_movies(i)
+        for movie in page_movie:
+            movie_list.append(movie)
+    return movie_list
 
 
 def save_to_file(path, data_list):
@@ -169,15 +159,15 @@ def down_to_file(data_list):
     数据下载到本地
     :param data_list: 数据列表
     """
-    if not os.path.exists('../douban/pic'):
-        os.makedirs('../douban/pic')
+    if not os.path.exists('../douban/image'):
+        os.makedirs('../douban/image')
     for data in data_list:
         name = data[0]
-        image_url = data[1]
+        image_url = data[-1]
         # 文件的后缀名
         image_type = re.findall('.*\\.(.*)', image_url)[0]
         with urlopen(image_url) as f_image:
-            with open('../douban/pic/{}.{}'.format(name, image_type), 'wb') as f:
+            with open('../douban/image/{}.{}'.format(name, image_type), 'wb') as f:
                 f.write(f_image.read())
 
 
@@ -193,7 +183,7 @@ def save_to_mysql(sql, data_list):
 
 
 def save_to_mongo(data_dicts):
-    db_client = pymongo.MongoClient('192.168.46.209')
+    db_client = pymongo.MongoClient('172.17.235.193')
     db = db_client['douban']
     db_collection = db['movies']
     db_collection.insert_many(data_dicts)
@@ -203,36 +193,26 @@ def save_to_mongo(data_dicts):
 if __name__ == '__main__':
     # 递归方式
     # movie_lists = recursion_movies('https://movie.douban.com/top250')
-    # save_to_file('../douban/info/movies_info.txt', movie_lists[0])
-    # save_to_file('../douban/info/movies_pic.txt', movie_lists[1])
-    # down_to_file(movie_lists[1])
-    # # 一般方式
+    # save_to_file('../douban/info/movies.txt', movie_lists)
+    # down_to_file(movie_lists)
+    # # # 一般方式
     # movie_lists = all_movies()
-    # save_to_file('../douban/info/movies_info.txt', movie_lists[0])
-    # save_to_file('../douban/info/movies_pic.txt', movie_lists[1])
-    # down_to_file(movie_lists[1])
+    # save_to_file('../douban/info/movies.txt', movie_lists)
+    # down_to_file(movie_lists)
     # 存入mysql
     # movie_lists = recursion_movies('https://movie.douban.com/top250')
-    # movie_info_list = movie_lists[0]
-    # movie_pic_list_list = movie_lists[1]
-    # info_sql = '''
-    #     insert into douban.info(name, url, director, actor, star, grade, grade_num)
-    #     values (%s, %s, %s, %s, %s, %s, %s)
+    # sql = '''
+    #     insert into douban.info(name, url, director, actor, star, grade, grade_num, pic_url)
+    #     values (%s, %s, %s, %s, %s, %s, %s, %s)
     # '''
-    # save_to_mysql(info_sql, movie_info_list)
-    # pic_sql = '''
-    #     insert into douban.pic(name, pic_url)
-    #     values (%s, %s)
-    # '''
-    # save_to_mysql(pic_sql, movie_pic_list)
+    # save_to_mysql(sql, movie_lists)
     # 存入mongodb
-    movie_lists = recursion_movies('https://movie.douban.com/top250')
-    movie_info_list = movie_lists[0]
-    movie_pic_list_list = movie_lists[1]
-    movie_info_title = ('name', 'url', 'director', 'actor', 'star', 'grade', 'grade_num')
-    movie_info_dicts = list()
-    for movie_info_value in movie_info_list:
-        movie_info_dict = dict(zip(movie_info_title, movie_info_value))
-        movie_info_dicts.append(movie_info_dict)
-    print(movie_info_dicts)
-    save_to_mongo(movie_info_dicts)
+    # movie_lists = recursion_movies('https://movie.douban.com/top250')
+    # movie_title = ('name', 'url', 'director', 'actor', 'star', 'grade', 'grade_num', 'pic_url')
+    # movie_dicts = list()
+    # for movie_value in movie_list:
+    #     movie_dict = dict(zip(movie_title, movie_value))
+    #     movie_dicts.append(movie_dict)
+    # print(movie_dicts)
+    # save_to_mongo(movie_dicts)
+    pass

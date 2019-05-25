@@ -10,7 +10,7 @@ import MySQLdb
 
 
 def get_mysql_connect():
-    host = '192.168.46.209'
+    host = '172.17.235.193'
     user = 'root'
     password = 'root'
     db = 'douban'
